@@ -13,7 +13,8 @@ npm create astro@latest -- --template basics
 ```sh
 git init
 git add -A
-git
+git commit -m "initial commit"
+gh repo create lylics --private --source=. --remote=upstream --push
 ```
 
 ### 🚀 Project Structure
