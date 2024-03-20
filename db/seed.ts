@@ -1,4 +1,4 @@
-import { Artist, db, Lylic } from 'astro:db'
+import { db, Lylic } from 'astro:db'
 
 // https://astro.build/db/seed
 export default async function seed() {
