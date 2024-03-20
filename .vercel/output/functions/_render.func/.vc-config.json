@@ -1,6 +1,0 @@
-{
-	"runtime": "nodejs18.x",
-	"handler": "home/kayaman/Projects/lylics/.vercel/output/_functions/entry.mjs",
-	"launcherType": "Nodejs",
-	"supportsResponseStreaming": true
-}
