@@ -3,7 +3,6 @@ import { db, Lylic } from 'astro:db'
 
 if (Astro.request.method === 'POST') {
   const data = await Astro.request.formData()
-
   const artist = data.get('artist') as string
   const quote = data.get('quote') as string
 
@@ -11,8 +10,6 @@ if (Astro.request.method === 'POST') {
     quote,
     artist,
   })
-
-  console.log({quote})
 
   return Astro.redirect("/");
 }

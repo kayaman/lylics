@@ -1,11 +1,6 @@
 import type { APIRoute } from 'astro'
 import { db, sql, Lylic } from 'astro:db'
 
-type Quote = {
-	quote: string
-	artist: string
-}
-
 // GET /
 export const GET: APIRoute = async () => {
 	const rs = await db.select().from(Lylic).orderBy(sql`random()`).limit(1)
