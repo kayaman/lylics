@@ -4,12 +4,12 @@ import { db, Lylic } from 'astro:db'
 if (Astro.request.method === 'POST') {
   const data = await Astro.request.formData()
 
-  const artist = data.get('artist')
-  const quote = data.get('quote')
+  const artist = data.get('artist') as string
+  const quote = data.get('quote') as string
 
   await db.insert(Lylic).values({
+    quote,
     artist,
-    quote
   })
 
   console.log({quote})
