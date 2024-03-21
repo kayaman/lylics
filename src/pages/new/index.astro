@@ -7,7 +7,7 @@ if (Astro.request.method === 'POST') {
   const artist = data.get('artist')
   const quote = data.get('quote')
 
-  await db.insert(Lylic, {
+  await db.insert(Lylic).values({
     artist,
     quote
   })
