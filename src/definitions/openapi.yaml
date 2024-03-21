@@ -18,7 +18,7 @@ servers:
   - url: https://lylics.magj.dev/api/v1
     description: Production server
 paths:
-  /lylics:
+  "/lylics":
     get:
       description: |
         Return a random lylic.

@@ -14,7 +14,6 @@
 		"@astro-openapi/backend": "^0.0.3",
 		"@astro-openapi/bundler": "^0.0.2",
 		"@astro-openapi/client": "^0.0.5",
-		"@astro-openapi/gui-elements": "^0.0.3",
 		"@astro-openapi/gui-redoc": "^0.0.3",
 		"@astro-openapi/gui-swagger": "^0.0.5",
 		"@astro-openapi/typegen": "^0.0.3",

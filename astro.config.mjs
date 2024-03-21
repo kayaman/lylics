@@ -8,11 +8,9 @@ import openapiClient from "@astro-openapi/client";
 import openapiGuiSwagger from "@astro-openapi/gui-swagger";
 import openapiGuiRedoc from "@astro-openapi/gui-redoc";
 
-import openapiGuiElements from "@astro-openapi/gui-elements";
-
 // https://astro.build/config
 export default defineConfig({
   output: 'server',
-  integrations: [db(), openapiBackend(), openapiTypegen(), openapiBundler(), openapiClient(), openapiGuiSwagger(), openapiGuiRedoc(), openapiGuiElements()],
+  integrations: [db(), openapiBackend(), openapiTypegen(), openapiBundler(), openapiClient(), openapiGuiSwagger(), openapiGuiRedoc()],
   adapter: vercel()
 });
