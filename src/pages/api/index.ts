@@ -1,10 +1,16 @@
 import type { APIRoute } from 'astro'
-import { db, Lylic } from 'astro:db'
+import { db, sql, Lylic } from 'astro:db'
+
+type Quote = {
+	quote: string
+	artist: string
+}
+
 // GET /
 export const GET: APIRoute = async () => {
-	const lylics = await db.select().from(Lylic).all()
-	console.log({ lylics })
-	return new Response(JSON.stringify(lylics))
+	const rs = await db.select().from(Lylic).orderBy(sql`random()`).limit(1)
+	const {artist, quote} = rs[0]
+	return new Response(`${quote} ~~ ${artist}`)
 }
 
 export const POST: APIRoute = async ({ request }) => {
