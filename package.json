@@ -10,13 +10,24 @@
 		"astro": "astro"
 	},
 	"dependencies": {
+		"@apidevtools/swagger-parser": "^10.1.0",
+		"@astro-openapi/backend": "^0.0.3",
+		"@astro-openapi/bundler": "^0.0.2",
+		"@astro-openapi/client": "^0.0.5",
+		"@astro-openapi/gui-redoc": "^0.0.3",
+		"@astro-openapi/gui-swagger": "^0.0.5",
+		"@astro-openapi/typegen": "^0.0.3",
 		"@astrojs/check": "^0.5.9",
 		"@astrojs/db": "^0.8.6",
 		"@astrojs/vercel": "^7.4.0",
 		"@neondatabase/serverless": "^0.9.0",
 		"astro": "^4.5.5",
 		"drizzle-orm": "^0.30.4",
-		"typescript": "^5.4.2"
+		"openapi-backend": "^5.10.6",
+		"openapi-client-axios": "^7.5.4",
+		"openapi-client-axios-typegen": "^7.6.0",
+		"typescript": "^5.4.2",
+		"vite-plugin-top-level-await": "^1.4.1"
 	},
 	"devDependencies": {
 		"drizzle-kit": "^0.20.14"
