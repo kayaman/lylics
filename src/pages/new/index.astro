@@ -1,0 +1,25 @@
+---
+import { db, Lylic } from 'astro:db'
+
+if (Astro.request.method === 'POST') {
+  const data = await Astro.request.formData()
+
+  const artist = data.get('artist')
+  const quote = data.get('quote')
+
+  await db.insert(Lylic, {
+    artist,
+    quote
+  })
+
+  console.log({quote})
+
+  return Astro.redirect("/");
+}
+---
+
+<form method="POST">
+  <input type="text" name="quote" placeholder="Quote..." required>
+  <input type="text" name="artist" placeholder="Artist" required>
+  <input type="submit" value="Add Quote">
+</form>
