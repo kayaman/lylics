@@ -1,25 +1,26 @@
 ---
 import OpenApiGuiSwagger from '@astro-openapi/gui-swagger/OpenApiGuiSwagger.astro';
-import OpenApiGuiRedoc from '@astro-openapi/gui-redoc/OpenApiGuiRedoc.astro';
+// import OpenApiGuiRedoc from '@astro-openapi/gui-redoc/OpenApiGuiRedoc.astro';
 const SITE_TITLE = 'Lylics API Reference';
 const schemaUrl = 'http://localhost:4321' //OPENAPI_DEFINITION_URL;
 
-export function getStaticPaths() {
-	return (
-		[
-			//
-			'redoc',
-			'swagger',
-		]
-			//
-			.map((gui) => ({
-				params: { gui },
-			}))
-	);
-}
-export const prerender = true;
+// export function getStaticPaths() {
+// 	return (
+// 		[
+// 			//
+// 			// 'redoc',
+// 			'swagger',
+// 		]
+// 			//
+// 			.map((gui) => ({
+// 				params: { gui },
+// 			}))
+// 	);
+// }
+// export const prerender = true;
 
-const { gui } = Astro.params;
+// const { gui } = Astro.params;
+const gui = 'swagger';
 ---
 
 <!DOCTYPE html>
@@ -33,7 +34,7 @@ const { gui } = Astro.params;
 	<body class={gui}>
 		{gui === 'swagger' && <OpenApiGuiSwagger {schemaUrl} />}
 
-		{gui === 'redoc' && <OpenApiGuiRedoc {schemaUrl} />}
+		<!-- {gui === 'redoc' && <OpenApiGuiRedoc {schemaUrl} />} -->
 
 	</body>
 </html>
