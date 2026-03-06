@@ -86,9 +86,7 @@ async fn healthz() -> impl IntoResponse {
     Json(serde_json::json!({ "status": "ok" }))
 }
 
-async fn readyz(
-    axum::extract::State(state): axum::extract::State<AppState>,
-) -> impl IntoResponse {
+async fn readyz(axum::extract::State(state): axum::extract::State<AppState>) -> impl IntoResponse {
     let resp = HealthResponse {
         status: "ready".into(),
         version: env!("CARGO_PKG_VERSION").into(),
@@ -138,14 +136,9 @@ async fn stream_lyrics(
                         "song": song,
                         "chunk": chunk,
                     });
-                    Event::default()
-                        .event("lyric")
-                        .json_data(payload)
-                        .unwrap()
+                    Event::default().event("lyric").json_data(payload).unwrap()
                 }
-                None => Event::default()
-                    .event("error")
-                    .data("no lyrics available"),
+                None => Event::default().event("error").data("no lyrics available"),
             };
             Ok(event)
         });
