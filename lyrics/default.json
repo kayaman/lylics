@@ -1,0 +1,20 @@
+[
+  {
+    "artist": "Sample Artist",
+    "song": "Sample Song",
+    "chunks": [
+      "Replace this file with your own lyrics collection.",
+      "Set LYLICS_DATA_PATH to point to your custom lyrics JSON.",
+      "Each entry has an artist, song, and an array of chunks."
+    ]
+  },
+  {
+    "artist": "Example Band",
+    "song": "Example Track",
+    "chunks": [
+      "This is a sample chunk to demonstrate the data format.",
+      "Mount your own lyrics file via the Helm chart's configMap.",
+      "Keep chunks short - a few lines work best for the SSE stream."
+    ]
+  }
+]

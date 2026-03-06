@@ -1,0 +1,17 @@
+apiVersion: v2
+name: lylics
+description: A lightweight Rust microservice that streams random lyrics chunks via SSE
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+maintainers:
+  - name: kayaman
+    url: https://github.com/kayaman
+keywords:
+  - lyrics
+  - sse
+  - rust
+  - microservice
+home: https://github.com/kayaman/lylics
+sources:
+  - https://github.com/kayaman/lylics

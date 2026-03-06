@@ -1,0 +1,11 @@
+{{- if .Values.lyricsData }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lylics.fullname" . }}-lyrics
+  labels:
+    {{- include "lylics.labels" . | nindent 4 }}
+data:
+  lyrics.json: |
+    {{- .Values.lyricsData | nindent 4 }}
+{{- end }}

@@ -1,0 +1,48 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/kayaman/lylics
+  pullPolicy: IfNotPresent
+  tag: ""  # defaults to appVersion
+
+service:
+  type: ClusterIP
+  port: 3000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: lylics.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 50m
+    memory: 16Mi
+  requests:
+    cpu: 10m
+    memory: 8Mi
+
+env:
+  LYLICS_PORT: "3000"
+  RUST_LOG: "lylics=info"
+
+# Mount custom lyrics as a ConfigMap
+lyricsData: ""
+# lyricsData: |
+#   [
+#     {
+#       "artist": "Your Artist",
+#       "song": "Your Song",
+#       "chunks": ["line one", "line two"]
+#     }
+#   ]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
