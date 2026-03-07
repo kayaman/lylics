@@ -68,7 +68,7 @@ data "aws_route53_zone" "main" {
 
 resource "aws_security_group" "alb" {
   name_prefix = "${var.app_name}-alb-"
-  description = "ALB — HTTP/HTTPS inbound"
+  description = "ALB - HTTP/HTTPS inbound"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
@@ -97,7 +97,7 @@ resource "aws_security_group" "alb" {
 
 resource "aws_security_group" "ecs" {
   name_prefix = "${var.app_name}-ecs-"
-  description = "ECS — traffic from ALB only"
+  description = "ECS - traffic from ALB only"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
@@ -167,7 +167,7 @@ resource "aws_lb_target_group" "main" {
   deregistration_delay = 30
 
   health_check {
-    path                = "/healthz"
+    path                = "/health"
     protocol            = "HTTP"
     healthy_threshold   = 2
     unhealthy_threshold = 3
@@ -355,10 +355,8 @@ resource "aws_ecs_service" "main" {
 
 # ── GitHub Actions OIDC ──────────────────────────────────────
 
-resource "aws_iam_openid_connect_provider" "github" {
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+data "aws_iam_openid_connect_provider" "github" {
+  url = "https://token.actions.githubusercontent.com"
 }
 
 data "aws_iam_policy_document" "github_assume" {
@@ -367,7 +365,7 @@ data "aws_iam_policy_document" "github_assume" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github.arn]
+      identifiers = [data.aws_iam_openid_connect_provider.github.arn]
     }
 
     condition {

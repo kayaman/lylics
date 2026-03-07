@@ -1,6 +1,6 @@
 # ── Production Environment ────────────────────────────────────
 
-aws_region  = "us-east-1"
+aws_region  = "eu-north-1"
 app_name    = "lylics"
 environment = "production"
 
