@@ -40,6 +40,7 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
+          {{- if or .Values.lyricsData (gt (len (.Values.env | default dict)) 0) }}
           env:
             {{- range $key, $value := .Values.env }}
             - name: {{ $key }}
@@ -49,6 +50,7 @@ spec:
             - name: LYLICS_DATA_PATH
               value: /data/lyrics.json
             {{- end }}
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /healthz
@@ -79,4 +81,16 @@ spec:
         - name: lyrics
           configMap:
             name: {{ include "lylics.fullname" . }}-lyrics
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
       {{- end }}
