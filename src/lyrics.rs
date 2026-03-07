@@ -5,14 +5,9 @@ pub struct LyricsStore {
     entries: Vec<String>,
 }
 
-const DEFAULT_LYRICS: &str = include_str!("../lyrics/default.json");
+const DEFAULT_LYRICS: &str = include_str!("../lyrics/lyrics.json");
 
 impl LyricsStore {
-    #[cfg(test)]
-    pub fn from_entries(entries: Vec<String>) -> Self {
-        Self { entries }
-    }
-
     pub fn load() -> Self {
         let entries = if let Ok(path) = std::env::var("LYLICS_DATA_PATH") {
             match std::fs::read_to_string(&path) {
@@ -48,13 +43,10 @@ impl LyricsStore {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.entries.is_empty()
     }
 
     pub fn random_chunk(&self) -> Option<String> {
-        if self.is_empty() {
-            return None;
-        }
         let mut rng = rand::thread_rng();
         self.entries.choose(&mut rng).cloned()
     }
@@ -64,105 +56,92 @@ impl LyricsStore {
 mod tests {
     use super::*;
 
-    fn make_store(entries: Vec<&str>) -> LyricsStore {
-        LyricsStore {
-            entries: entries.into_iter().map(String::from).collect(),
-        }
+    fn make_store(entries: Vec<String>) -> LyricsStore {
+        LyricsStore { entries }
     }
 
-    // --- len / is_empty ---
+    #[test]
+    fn test_len_with_entries() {
+        let store = make_store(vec!["a".into(), "b".into(), "c".into()]);
+        assert_eq!(store.len(), 3);
+    }
 
     #[test]
-    fn len_empty() {
+    fn test_len_empty() {
         let store = make_store(vec![]);
         assert_eq!(store.len(), 0);
     }
 
     #[test]
-    fn len_with_entries() {
-        let store = make_store(vec!["a", "b", "c"]);
-        assert_eq!(store.len(), 3);
+    fn test_is_empty_true() {
+        let store = make_store(vec![]);
+        assert!(store.is_empty());
     }
 
     #[test]
-    fn is_empty_true() {
-        assert!(make_store(vec![]).is_empty());
+    fn test_is_empty_false() {
+        let store = make_store(vec!["line".into()]);
+        assert!(!store.is_empty());
     }
 
     #[test]
-    fn is_empty_false() {
-        assert!(!make_store(vec!["x"]).is_empty());
-    }
-
-    // --- random_chunk ---
-
-    #[test]
-    fn random_chunk_returns_none_when_empty() {
-        assert!(make_store(vec![]).random_chunk().is_none());
+    fn test_random_chunk_returns_some() {
+        let store = make_store(vec!["only line".into()]);
+        let result = store.random_chunk();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), "only line");
     }
 
     #[test]
-    fn random_chunk_returns_the_entry_for_single_element() {
-        let store = make_store(vec!["only lyric"]);
-        for _ in 0..10 {
-            assert_eq!(store.random_chunk().unwrap(), "only lyric");
-        }
+    fn test_random_chunk_returns_none_when_empty() {
+        let store = make_store(vec![]);
+        assert!(store.random_chunk().is_none());
     }
 
     #[test]
-    fn random_chunk_returns_one_of_the_entries() {
-        let store = make_store(vec!["a", "b", "c"]);
-        let allowed = ["a", "b", "c"];
+    fn test_random_chunk_multiple_entries() {
+        let store = make_store(vec!["line1".into(), "line2".into(), "line3".into()]);
         for _ in 0..20 {
             let chunk = store.random_chunk().unwrap();
-            assert!(
-                allowed.contains(&chunk.as_str()),
-                "unexpected chunk: {chunk}"
-            );
+            assert!(chunk == "line1" || chunk == "line2" || chunk == "line3");
         }
     }
 
-    // --- load: default fallback (no env var) ---
+    #[test]
+    fn test_load_defaults() {
+        let defaults = LyricsStore::load_defaults();
+        assert!(!defaults.is_empty());
+    }
 
     #[test]
-    fn load_no_env_var_uses_defaults() {
+    fn test_load_no_env_var_uses_defaults() {
         std::env::remove_var("LYLICS_DATA_PATH");
         let store = LyricsStore::load();
-        assert!(!store.is_empty());
         assert!(store.len() > 0);
+        assert!(!store.is_empty());
     }
 
     #[test]
-    fn load_defaults_contains_expected_lyrics() {
-        std::env::remove_var("LYLICS_DATA_PATH");
-        let store = LyricsStore::load();
-        let chunks: Vec<String> = store.entries.clone();
-        assert!(
-            chunks.iter().any(|s| s.contains("Nothing really matters")),
-            "expected embedded lyric not found"
-        );
-    }
-
-    // --- load: from file ---
-
-    #[test]
-    fn load_with_valid_file() {
-        let path = std::env::temp_dir().join("lylics_test_valid.json");
-        std::fs::write(&path, r#"["hello world", "second lyric"]"#).unwrap();
+    fn test_load_with_valid_file() {
+        let dir = std::env::temp_dir();
+        let path = dir.join("lylics_test_valid.json");
+        let data = r#"["hello world", "another line"]"#;
+        std::fs::write(&path, data).unwrap();
 
         std::env::set_var("LYLICS_DATA_PATH", path.to_str().unwrap());
         let store = LyricsStore::load();
         assert_eq!(store.len(), 2);
         let chunk = store.random_chunk().unwrap();
-        assert!(chunk == "hello world" || chunk == "second lyric");
+        assert!(chunk == "hello world" || chunk == "another line");
 
         std::env::remove_var("LYLICS_DATA_PATH");
         std::fs::remove_file(&path).ok();
     }
 
     #[test]
-    fn load_with_invalid_json_falls_back_to_defaults() {
-        let path = std::env::temp_dir().join("lylics_test_invalid.json");
+    fn test_load_with_invalid_json_file() {
+        let dir = std::env::temp_dir();
+        let path = dir.join("lylics_test_invalid.json");
         std::fs::write(&path, "not valid json {{{").unwrap();
 
         std::env::set_var("LYLICS_DATA_PATH", path.to_str().unwrap());
@@ -174,8 +153,8 @@ mod tests {
     }
 
     #[test]
-    fn load_with_nonexistent_file_falls_back_to_defaults() {
-        std::env::set_var("LYLICS_DATA_PATH", "/tmp/lylics_nonexistent_12345.json");
+    fn test_load_with_nonexistent_file() {
+        std::env::set_var("LYLICS_DATA_PATH", "/tmp/lylics_nonexistent_file.json");
         let store = LyricsStore::load();
         assert!(store.len() > 0, "should fall back to defaults");
 

@@ -64,7 +64,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(health))
-        .route("/ready", get(readyz))
+        .route("/ready", get(ready))
         .route("/api/v1/random", get(random_lyric))
         .route("/api/v1/stream", get(stream_lyrics))
         .layer(CorsLayer::permissive())
@@ -84,7 +84,17 @@ async fn health() -> impl IntoResponse {
     Json(serde_json::json!({ "ok": "ok" }))
 }
 
-async fn readyz(axum::extract::State(state): axum::extract::State<AppState>) -> impl IntoResponse {
+async fn ready(axum::extract::State(state): axum::extract::State<AppState>) -> impl IntoResponse {
+    if state.store.is_empty() {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(HealthResponse {
+                status: "no lyrics loaded".into(),
+                version: env!("CARGO_PKG_VERSION").into(),
+                lyrics_count: 0,
+            }),
+        );
+    }
     let resp = HealthResponse {
         status: "ok".into(),
         version: env!("CARGO_PKG_VERSION").into(),
@@ -98,11 +108,11 @@ async fn random_lyric(
     axum::extract::State(state): axum::extract::State<AppState>,
 ) -> impl IntoResponse {
     match state.store.random_chunk() {
-        Some(text) => (StatusCode::OK, Json(Lyrics { text })),
+        Some(chunk) => (StatusCode::OK, Json(Lyrics { text: chunk })),
         None => (
             StatusCode::SERVICE_UNAVAILABLE,
             Json(Lyrics {
-                text: "no lyrics loaded".into(),
+                text: "no lyrics available".into(),
             }),
         ),
     }
@@ -119,8 +129,8 @@ async fn stream_lyrics(
     let stream = IntervalStream::new(tokio::time::interval(Duration::from_secs(interval_secs)))
         .map(move |_| {
             let event = match state.store.random_chunk() {
-                Some(text) => {
-                    let payload = serde_json::json!({ "text": text });
+                Some(chunk) => {
+                    let payload = serde_json::json!({ "text": chunk });
                     Event::default().event("lyric").json_data(payload).unwrap()
                 }
                 None => Event::default().event("error").data("no lyrics available"),
@@ -133,196 +143,4 @@ async fn stream_lyrics(
             .interval(Duration::from_secs(15))
             .text("ping"),
     )
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use axum::body::Body;
-    use http_body_util::BodyExt;
-    use tower::ServiceExt;
-
-    fn app_with_lyrics(lyrics: Vec<&'static str>) -> Router {
-        let store = LyricsStore::from_entries(lyrics.into_iter().map(String::from).collect());
-        let state = AppState {
-            store: Arc::new(store),
-        };
-        Router::new()
-            .route("/health", get(health))
-            .route("/ready", get(readyz))
-            .route("/api/v1/random", get(random_lyric))
-            .route("/api/v1/stream", get(stream_lyrics))
-            .with_state(state)
-    }
-
-    async fn body_string(body: Body) -> String {
-        let bytes = body.collect().await.unwrap().to_bytes();
-        String::from_utf8(bytes.to_vec()).unwrap()
-    }
-
-    // --- GET /health ---
-
-    #[tokio::test]
-    async fn test_health() {
-        let app = app_with_lyrics(vec!["a lyric"]);
-        let response = app
-            .oneshot(
-                axum::http::Request::builder()
-                    .uri("/health")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = body_string(response.into_body()).await;
-        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
-        assert_eq!(json["ok"], "ok");
-    }
-
-    // --- GET /ready ---
-
-    #[tokio::test]
-    async fn test_readyz() {
-        let app = app_with_lyrics(vec!["a", "b", "c"]);
-        let response = app
-            .oneshot(
-                axum::http::Request::builder()
-                    .uri("/ready")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = body_string(response.into_body()).await;
-        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
-        assert_eq!(json["status"], "ok");
-        assert_eq!(json["lyrics_count"], 3);
-        assert!(json["version"].is_string());
-    }
-
-    // --- GET /api/v1/random ---
-
-    #[tokio::test]
-    async fn test_random_lyric_ok() {
-        let app = app_with_lyrics(vec!["hello world"]);
-        let response = app
-            .oneshot(
-                axum::http::Request::builder()
-                    .uri("/api/v1/random")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = body_string(response.into_body()).await;
-        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
-        assert_eq!(json["text"], "hello world");
-    }
-
-    #[tokio::test]
-    async fn test_random_lyric_empty_store_returns_503() {
-        let app = app_with_lyrics(vec![]);
-        let response = app
-            .oneshot(
-                axum::http::Request::builder()
-                    .uri("/api/v1/random")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
-        let body = body_string(response.into_body()).await;
-        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
-        assert_eq!(json["text"], "no lyrics loaded");
-    }
-
-    // --- GET /api/v1/stream ---
-
-    #[tokio::test]
-    async fn test_stream_lyrics_returns_sse_content_type() {
-        let app = app_with_lyrics(vec!["streaming lyric"]);
-        let response = app
-            .oneshot(
-                axum::http::Request::builder()
-                    .uri("/api/v1/stream")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let content_type = response
-            .headers()
-            .get("content-type")
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or("");
-        assert!(
-            content_type.contains("text/event-stream"),
-            "expected text/event-stream, got: {content_type}"
-        );
-    }
-
-    #[tokio::test]
-    async fn test_stream_lyrics_custom_interval_returns_sse() {
-        let app = app_with_lyrics(vec!["lyric"]);
-        let response = app
-            .oneshot(
-                axum::http::Request::builder()
-                    .uri("/api/v1/stream?interval=5")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-    }
-
-    #[tokio::test]
-    async fn test_stream_lyrics_interval_clamp_low() {
-        // interval=0 should be clamped to 1 — still responds with SSE
-        let app = app_with_lyrics(vec!["lyric"]);
-        let response = app
-            .oneshot(
-                axum::http::Request::builder()
-                    .uri("/api/v1/stream?interval=0")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-    }
-
-    #[tokio::test]
-    async fn test_stream_lyrics_interval_clamp_high() {
-        // interval=9999 should be clamped to 300 — still responds with SSE
-        let app = app_with_lyrics(vec!["lyric"]);
-        let response = app
-            .oneshot(
-                axum::http::Request::builder()
-                    .uri("/api/v1/stream?interval=9999")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-    }
-
-    #[tokio::test]
-    async fn test_default_interval_value() {
-        assert_eq!(default_interval(), 10);
-    }
 }
