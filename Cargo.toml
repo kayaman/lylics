@@ -1,6 +1,6 @@
 [package]
 name = "lylics"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "A lightweight microservice that serves random lyrics chunks via SSE"
 license = "MIT"
@@ -16,6 +16,10 @@ tokio-stream = "0.1"
 tower-http = { version = "0.6", features = ["cors"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
 
 [profile.release]
 opt-level = "z"
