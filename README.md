@@ -8,10 +8,10 @@ Built with [Axum](https://github.com/tokio-rs/axum), compiled to a static musl b
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/healthz` | GET | Liveness probe |
-| `/readyz` | GET | Readiness probe (includes version + lyrics count) |
-| `/api/v1/random` | GET | Returns a single random lyric chunk as JSON |
-| `/api/v1/stream?interval=10` | GET | SSE stream of random lyrics (interval in seconds, default 10) |
+| `/health` | GET | Liveness probe |
+| `/ready` | GET | Readiness probe (includes version + lyrics count) |
+| `/api/v1/random` | GET | Returns a single random lyric as `{"text": "..."}` |
+| `/api/v1/stream?interval=10` | GET | SSE stream of random lyrics (interval in seconds, default 10, clamped 1–300) |
 
 ### SSE Example
 
@@ -21,10 +21,10 @@ curl -N http://localhost:3000/api/v1/stream?interval=5
 
 ```
 event: lyric
-data: {"artist":"Your Artist","song":"Your Song","chunk":"Some lyric line"}
+data: {"text":"Nothing really matters to me, anyway the wind blows..."}
 
 event: lyric
-data: {"artist":"Another Artist","song":"Another Song","chunk":"Another line"}
+data: {"text":"The future is uncertain and the end is always near"}
 ```
 
 ### Browser Example
@@ -32,8 +32,8 @@ data: {"artist":"Another Artist","song":"Another Song","chunk":"Another line"}
 ```javascript
 const source = new EventSource('http://localhost:3000/api/v1/stream?interval=10');
 source.addEventListener('lyric', (e) => {
-  const { artist, song, chunk } = JSON.parse(e.data);
-  console.log(`${artist} — ${song}: ${chunk}`);
+  const { text } = JSON.parse(e.data);
+  console.log(text);
 });
 ```
 
@@ -48,16 +48,13 @@ source.addEventListener('lyric', (e) => {
 
 ## Lyrics Data Format
 
+A flat JSON array of strings. Point `LYLICS_DATA_PATH` to your file, or use the embedded defaults.
+
 ```json
 [
-  {
-    "artist": "Artist Name",
-    "song": "Song Title",
-    "chunks": [
-      "First lyrics chunk",
-      "Second lyrics chunk"
-    ]
-  }
+  "First lyric line",
+  "Second lyric line",
+  "Third lyric line"
 ]
 ```
 
@@ -82,7 +79,7 @@ The chart lives in [kayaman/helm-charts](https://github.com/kayaman/helm-charts)
 
 ```bash
 helm install lylics charts/lylics \
-  --set lyricsData='[{"artist":"Me","song":"My Song","chunks":["hello world"]}]'
+  --set lyricsData='["hello world","another lyric"]'
 ```
 
 ## Release
@@ -90,8 +87,8 @@ helm install lylics charts/lylics \
 Push a semver tag to trigger the full pipeline:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
 This will: lint → test → build & push container to `ghcr.io/kayaman/lylics` → deploy to AWS ECS → create a GitHub Release with auto-generated changelog.
