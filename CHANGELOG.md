@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.3.2](https://github.com/kayaman/lylics/releases/tag/v0.3.2) — 2026-03-15
+
+### Fixes
+
+- trigger CI pipeline from release workflow via workflow_dispatch
+
+### Other
+
+- chore: release v0.3.1
+- ci: add automated release workflow and decouple release from deploy
+
+
 ## [v0.3.1](https://github.com/kayaman/lylics/releases/tag/v0.3.1) — 2026-03-15
 
 ### Other
