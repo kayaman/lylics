@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.3.1](https://github.com/kayaman/lylics/releases/tag/v0.3.1) — 2026-03-15
+
+### Other
+
+- ci: add automated release workflow and decouple release from deploy
+
+
 ## [v0.3.0](https://github.com/kayaman/lylics/releases/tag/v0.3.0) — 2026-03-14
 
 ### Features
