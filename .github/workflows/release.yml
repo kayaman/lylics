@@ -1,0 +1,128 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Bump, Tag & Push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Parse current version
+        id: current
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          echo "major=$MAJOR" >> "$GITHUB_OUTPUT"
+          echo "minor=$MINOR" >> "$GITHUB_OUTPUT"
+          echo "patch=$PATCH" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate new version
+        id: next
+        run: |
+          MAJOR=${{ steps.current.outputs.major }}
+          MINOR=${{ steps.current.outputs.minor }}
+          PATCH=${{ steps.current.outputs.patch }}
+
+          case "${{ inputs.bump }}" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "### Version bump: ${{ steps.current.outputs.version }} → ${NEW_VERSION}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update Cargo.toml
+        run: |
+          sed -i "s/^version = \"${{ steps.current.outputs.version }}\"/version = \"${{ steps.next.outputs.version }}\"/" Cargo.toml
+
+      - name: Generate changelog entry
+        id: changelog
+        run: |
+          PREV_TAG=$(git tag --sort=-v:refname | head -1)
+          DATE=$(date +%Y-%m-%d)
+          NEW_TAG="${{ steps.next.outputs.tag }}"
+          REPO_URL="https://github.com/${{ github.repository }}"
+
+          HEADER="## [${NEW_TAG}](${REPO_URL}/releases/tag/${NEW_TAG}) — ${DATE}"
+
+          BREAKING=""
+          FEATURES=""
+          FIXES=""
+          OTHER=""
+
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            if echo "$line" | grep -qE '^(feat|fix|refactor|chore|docs|style|test|ci|perf|build)(\(.+\))?!:'; then
+              BREAKING="${BREAKING}\n- ${line#*: }"
+            elif echo "$line" | grep -q '^feat'; then
+              FEATURES="${FEATURES}\n- ${line#*: }"
+            elif echo "$line" | grep -q '^fix'; then
+              FIXES="${FIXES}\n- ${line#*: }"
+            else
+              OTHER="${OTHER}\n- ${line}"
+            fi
+          done <<< "$(git log "${PREV_TAG}..HEAD" --pretty=format:"%s" --no-merges)"
+
+          {
+            echo "entry<<EOF"
+            echo "$HEADER"
+            echo ""
+            [ -n "$BREAKING" ] && echo "### Breaking Changes" && echo -e "$BREAKING" && echo ""
+            [ -n "$FEATURES" ] && echo "### Features" && echo -e "$FEATURES" && echo ""
+            [ -n "$FIXES" ] && echo "### Fixes" && echo -e "$FIXES" && echo ""
+            [ -n "$OTHER" ] && echo "### Other" && echo -e "$OTHER" && echo ""
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Update CHANGELOG.md
+        env:
+          ENTRY: ${{ steps.changelog.outputs.entry }}
+        run: |
+          {
+            head -1 CHANGELOG.md
+            echo ""
+            echo "$ENTRY"
+            tail -n +2 CHANGELOG.md
+          } > CHANGELOG.tmp
+          mv CHANGELOG.tmp CHANGELOG.md
+
+      - name: Commit and tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Cargo.toml CHANGELOG.md
+          git commit -m "chore: release ${{ steps.next.outputs.tag }}"
+          git tag -a "${{ steps.next.outputs.tag }}" -m "${{ steps.next.outputs.tag }}"
+
+      - name: Push
+        run: git push origin main --tags
