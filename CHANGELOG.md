@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.3.0](https://github.com/kayaman/lylics/releases/tag/v0.3.0) — 2026-03-14
+
+### Features
+
+- Enhance Helm deployment configuration: conditional environment variable injection based on `lyricsData` and `env` values.
+- Add support for `nodeSelector`, `affinity`, and `tolerations` in the Helm deployment spec.
+
 ## [v0.2.0](https://github.com/kayaman/lylics/releases/tag/v0.2.0) — 2026-03-07
 
 ### Breaking Changes
